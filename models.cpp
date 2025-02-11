@@ -4,7 +4,46 @@
 
 using namespace std;
 
-int main() // needs revision (chromatic number)
+void find_subtour(int n, vector<vector<int>> &sol)
+{
+	vector<vector<int>> adj_matrix = {
+		{0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0}
+		{0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1}
+		{0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0}
+		{0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0}
+		{0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0}
+		{0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1}
+		{0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0}
+		{0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0}
+		{0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0}
+		{1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+		{0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0}
+	}
+	vector<int> tour, current, seen(n, 0);
+	tour.reserve(n);
+	current.reserve(n);
+	int len, best_len = n+1;
+	int start = 0;
+
+	while (start < n) {
+		len = 0
+		node = start;
+		current[0] = start;
+		for (int i = node + 1; i < n; i++) {
+			if (sol[node][i])
+				len++;
+				current[len] = i;
+		}
+
+		if (len < best_len) {
+			tour = current;
+			best_len = len;
+		}
+	}
+
+}
+
+int chromatic_n() // needs revision (chromatic number)
 {
 	int n = 4;
 
