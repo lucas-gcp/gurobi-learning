@@ -1,130 +1,187 @@
 #include "models.h"
 #include "gurobi_c++.h"
 #include <vector>
+#include <cmath>
+#include <cstdlib>
+#include <cassert>
 
 using namespace std;
-
-void find_subtour(int n, vector<vector<int>> &sol)
-{
-	vector<vector<int>> adj_matrix = {
-		{0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0}
-		{0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1}
-		{0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0}
-		{0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0}
-		{0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0}
-		{0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1}
-		{0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0}
-		{0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0}
-		{0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0}
-		{1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
-		{0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0}
-	}
-	vector<int> tour, current, seen(n, 0);
-	tour.reserve(n);
-	current.reserve(n);
-	int len, best_len = n+1;
-	int start = 0;
-
-	while (start < n) {
-		len = 0
-		node = start;
-		current[0] = start;
-		for (int i = node + 1; i < n; i++) {
-			if (sol[node][i])
-				len++;
-				current[len] = i;
-		}
-
-		if (len < best_len) {
-			tour = current;
-			best_len = len;
-		}
-	}
-
-}
 
 int chromatic_n() // needs revision (chromatic number)
 {
 	int n = 4;
-
+	
 	vector<vector<int>> neighbours = {
 		{1, 2,},
 		{0,},
 		{0, 3,},
 		{2,},
 	};
-
+	
 	GRBEnv env = GRBEnv(true);
 	env.set("LogFile", "logs/chromatic_n.log");
 	env.start();
-
+	
 	GRBModel model = GRBModel(env);
-
+	
 	vector<vector<GRBVar>> vars_x(n, vector<GRBVar>(n));
 	vector<GRBVar> vars_y(n);
 	for (int i = 0; i < n; i++)
 	{
 		for (int j = 0; j < n; j++)
-			vars_x[i][j] = model.addVar(0.0, 1.0, 0.0, GRB_BINARY, "x_" + to_string(i) + "_" + to_string(j));
+		vars_x[i][j] = model.addVar(0.0, 1.0, 0.0, GRB_BINARY, "x_" + to_string(i) + "_" + to_string(j));
 	}
-
+	
 	for (int j = 0; j < n; j++)
-		vars_y[j] = model.addVar(0.0, 1.0, 0.0, GRB_BINARY, "y_" + to_string(j));
-
+	vars_y[j] = model.addVar(0.0, 1.0, 0.0, GRB_BINARY, "y_" + to_string(j));
+	
 	for (int i = 0; i < n; i++)
 	{
 		GRBLinExpr expr = 0;
 		for (int j = 0; j < n; j++)
-			expr += vars_x[i][j];
+		expr += vars_x[i][j];
 		model.addConstr(expr, GRB_EQUAL, 1, "C1_" + to_string(i));
 	}
-
+	
 	for (int vertex = 0; vertex < n; vertex++)
 	{
 		for (auto neighbour : neighbours[vertex])
 		{
 			for (int j = 0; j < n; j++)
-				model.addConstr(vars_x[vertex][j] + vars_x[neighbour][j] <= 1, "C2_" + to_string(vertex) + "_" + to_string(neighbour) + "_" + to_string(j));
+			model.addConstr(vars_x[vertex][j] + vars_x[neighbour][j] <= 1, "C2_" + to_string(vertex) + "_" + to_string(neighbour) + "_" + to_string(j));
 		}
 	}
-
+	
 	for (int vertex = 0; vertex < n; vertex++)
-		for (int j = 0; j < n; j++)
-			model.addConstr(vars_x[vertex][j] <= vars_y[j], "C2_" + to_string(vertex) + "_" + to_string(j));
-
+	for (int j = 0; j < n; j++)
+	model.addConstr(vars_x[vertex][j] <= vars_y[j], "C2_" + to_string(vertex) + "_" + to_string(j));
+	
 	GRBLinExpr expr = 0;
 	for (int j = 0; j < n; j++)
-		expr += vars_y[j];
+	expr += vars_y[j];
 	model.setObjective(expr, GRB_MINIMIZE);
-
+	
 	model.optimize();
-
+	
 	for (int i = 0; i < n; i++)
 	{
 		for (int j = 0; j < n; j++)
-			if (static_cast<int>(vars_x[i][j].get(GRB_DoubleAttr_X)) == 1)
-				cout << vars_x[i][j].get(GRB_StringAttr_VarName) << endl;
+		if (static_cast<int>(vars_x[i][j].get(GRB_DoubleAttr_X)) == 1)
+		cout << vars_x[i][j].get(GRB_StringAttr_VarName) << endl;
 	}
-
+	
 	for (int j = 0; j < n; j++) {
 		cout << vars_y[j].get(GRB_StringAttr_VarName) << " "
-			 << vars_y[j].get(GRB_DoubleAttr_X) << endl;
+		<< vars_y[j].get(GRB_DoubleAttr_X) << endl;
 	}
-
+	
 	cout << "Obj: " << model.get(GRB_DoubleAttr_ObjVal) << endl;
-
+	
 	return 0;
 }
 
+double distance(double* x, double* y, int i, int j) {
+	double dx = x[i] - x[j];
+	double dy = y[i] - y[j];
+
+	return sqrt(dx*dx + dy*dy);
+}
+
+void find_subtour(int n, double** sol, vector<int> &tour, int &best_len)
+{
+	vector<int> current(n), seen(n, 0);
+	int len, node, start = 0;
+	best_len = n+1;
+
+	while (start < n) {
+		if (!seen[start]) {
+			seen[start] = 1;
+			len = 1;
+			node = start;
+			current[0] = start;
+			for (int i = node + 1; i < n; i++) {
+				if (sol[node][i] > 0.5 && !seen[i]) {
+					current[len] = i;
+					len++;
+					seen[i] = 1;
+					node = i;
+					i = start;
+				}
+			}
+			if (len < best_len) {
+				tour = current;
+				best_len = len;
+			}
+		}
+		start++;
+	}
+}
+
+class subtourelim: public GRBCallback
+{
+	public:
+	GRBVar **vars;
+	int n;
+	subtourelim(GRBVar **xvars, int xn) {
+		vars = xvars;
+		n = xn;
+	}
+	protected:
+	void callback() {
+		try {
+			if (where == GRB_CB_MIPSOL) {
+				double **x = new double*[n];
+				vector<int> tour(n);
+				int len;
+
+				for (int i = 0; i < n; i++) {
+					x[i] = getSolution(vars[i], n);
+				}
+
+				find_subtour(n, x, tour, len);
+
+				cout << len << endl;
+
+				if (len < n) {
+					GRBLinExpr expr = 0;
+					for (int i = 0; i < len; i++)
+						for (int j = i+1; j < len; j++)
+							expr += vars[tour[i]][tour[j]];
+					addLazy(expr <= len-1);
+				}
+
+				for (int i = 0; i < n; i++)
+					delete[] x[i];
+				delete x;
+			}
+		} catch (GRBException e) {
+			cout << "Error number: " << e.getErrorCode() << endl;
+			cout << e.getMessage() << endl;
+		} catch (...) {
+			cout << "Error during callback" << endl;	
+		}
+	}
+};
+
 int TSP() // Not done
 {
-	int n = 4;
-	vector<vector<double>> cost_matrix = {
-		{0.0, 2.8, 2.4, 2.5},
-		{2.8, 0.0, 1.3, 1.0},
-		{2.4, 1.3, 0.0, 1.5},
-		{2.5, 1.0, 1.5, 0.0},
-	};
+	int n = 15;
+
+	double* x = new double[n];
+	double* y = new double[n];
+
+	for (int i = 0; i < n; i++) {
+		x[i] = ((double) rand())/RAND_MAX;
+		y[i] = ((double) rand())/RAND_MAX;
+	}
+
+	for (int i = 0; i < n; i++)
+		cout << x[i] << ", ";
+	cout << endl;
+
+	for (int i = 0; i < n; i++)
+		cout << y[i] << ", ";
+	cout << endl;
 
 	GRBEnv env = GRBEnv(true);
 	env.set("LogFile", "tsp.log");
@@ -132,50 +189,61 @@ int TSP() // Not done
 
 	GRBModel model = GRBModel(env);
 
+	model.set(GRB_IntParam_LazyConstraints, 1);
+
 	vector<vector<GRBVar>> vars(n, vector<GRBVar>(n));
-	for (int i = 0; i < n; i++)
-	{
-		for (int j = 0; j < n; j++)
-			vars[i][j] = model.addVar(0.0, 1.0, 0.0, GRB_BINARY, "x_" + to_string(i) + "_" + to_string(j));
+	for (int i = 0; i < n; i++) {
+		for (int j = 0; j <= i; j++) {
+			vars[i][j] = model.addVar(0.0, 1.0, distance(x, y, i, j), GRB_BINARY, "x_" + to_string(i) + "_" + to_string(j));
+			vars[j][i] = vars[i][j];
+		}
 	}
-
+	
 	for (int i = 0; i < n; i++)
 	{
 		GRBLinExpr expr = 0;
 		for (int j = 0; j < n; j++)
 			expr += vars[i][j];
-		model.addConstr(expr, GRB_EQUAL, 1, "S_" + to_string(i));
-	}
-
-	for (int j = 0; j < n; j++)
-	{
-		GRBLinExpr expr = 0;
-		for (int i = 0; i < n; i++)
-			expr += vars[i][j];
-		model.addConstr(expr, GRB_EQUAL, 1, "E_" + to_string(j));
+		model.addConstr(expr, GRB_EQUAL, 2, "deg2_" + to_string(i));
 	}
 
 	for (int i = 0; i < n; i++)
 		vars[i][i].set(GRB_DoubleAttr_UB, 0);
-
-	GRBLinExpr expr = 0;
+		
+	GRBVar** xvars = new GRBVar*[n];
 	for (int i = 0; i < n; i++)
-	{
+		xvars[i] = new GRBVar[n];
+	for (int i = 0; i < n; i++)
 		for (int j = 0; j < n; j++)
-			expr += cost_matrix[i][j] * vars[i][j];
-	}
-	model.setObjective(expr, GRB_MINIMIZE);
+			xvars[i][j] = vars[i][j];
 
+	subtourelim cb = subtourelim(xvars, n);
+	model.setCallback(&cb);
+		
 	model.optimize();
 
-	for (int i = 0; i < n; i++)
-	{
-		for (int j = 0; j < n; j++)
-		{
-			cout << vars[i][j].get(GRB_StringAttr_VarName) << " "
-				<< vars[i][j].get(GRB_DoubleAttr_X) << endl;
-		}
+	if (model.get(GRB_IntAttr_SolCount) > 0) {
+		double **sol = new double*[n];
+		for (int i = 0; i < n; i++)
+		  sol[i] = model.get(GRB_DoubleAttr_X, xvars[i], n);
+  
+		vector<int>tour(n);
+		int len;
+  
+		find_subtour(n, sol, tour, len);
+		assert(len == n);
+  
+		cout << "Tour: ";
+		for (int i = 0; i < len; i++)
+		  cout << tour[i] << " ";
+		cout << endl;
+  
+		for (int i = 0; i < n; i++)
+		  delete[] sol[i];
+		delete[] sol;
 	}
+
+	delete[] xvars; 
 
 	cout << "Obj: " << model.get(GRB_DoubleAttr_ObjVal) << endl;
 

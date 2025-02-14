@@ -27,7 +27,7 @@ find_package(GUROBI REQUIRED)
 include_directories(${GUROBI_INCLUDE_DIRS})
 
 # list source files here
-set(sources main.cpp)
+set(sources main.cpp models.cpp models.h)
 
 add_executable(${CMAKE_PROJECT_NAME} ${sources})
 
