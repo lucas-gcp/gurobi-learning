@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.3)
+cmake_minimum_required(VERSION 3.3...3.31)
 
 project(gurobi-learning C)
 
@@ -27,17 +27,23 @@ find_package(GUROBI REQUIRED)
 include_directories(${GUROBI_INCLUDE_DIRS})
 
 # list source files here
-set(sources main.cpp models.cpp models.h)
+# set(sources main.cpp models.cpp models.h)
+# set(tsp tsp.cpp)
 
-add_executable(${CMAKE_PROJECT_NAME} ${sources})
+set(models assignment chromatic_n knapsack knapsack01 tsp)
+foreach(model ${models})
+  add_executable(${model} src/${model}.cpp)
+  
+  if(CXX)
+    set(CMAKE_CXX_STANDARD 11)
+    # target_link_libraries(${CMAKE_PROJECT_NAME} optimized ${GUROBI_CXX_LIBRARY}
+    #                       debug ${GUROBI_CXX_DEBUG_LIBRARY})
+    target_link_libraries(${model} optimized ${GUROBI_CXX_LIBRARY}
+                          debug ${GUROBI_CXX_DEBUG_LIBRARY})
+  endif()
 
-if(CXX)
-  set(CMAKE_CXX_STANDARD 11)
-  target_link_libraries(${CMAKE_PROJECT_NAME} optimized ${GUROBI_CXX_LIBRARY}
-                        debug ${GUROBI_CXX_DEBUG_LIBRARY})
-endif()
-
-target_link_libraries(${CMAKE_PROJECT_NAME} ${GUROBI_LIBRARY})
+  target_link_libraries(${model} ${GUROBI_LIBRARY})
+endforeach(model ${models})
 
 if(${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR})
   include(FeatureSummary)
